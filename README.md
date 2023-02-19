@@ -66,7 +66,7 @@ light:        151 lux
 conductivity: 432 µS/cm
 ```
 
-## Exemple
+## Example
 ```Python
 #!/usr/bin/python3
 
