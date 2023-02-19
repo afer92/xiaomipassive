@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name        = "xiaomipassive"
+version     = "2023.2.0.dev0"
+license     = {text = "Apache-2.0"}
+description = "MiFlora and LYWSD02 passive scanner"
+readme      = "README.rst"
+authors     = [
+    {name = "Alain", email = "afer921@mailfence.com"}
+]
+keywords    = ["home", "automation"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Home Automation",
+]
+requires-python = ">=3.9.0"
+dependencies    = [
+    "bleak",
+    "construct",
+    "pip>=21.0",
+]
