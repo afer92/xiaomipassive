@@ -15,7 +15,7 @@ import queue
 
 import construct
 from construct import Array, Byte, Const, Int8sl, Int8ub, Int16ub, Struct
-from construct import Int8ul, Int16ul, Int16sl
+from construct import Int8ul, Int16ul, Int16sl, Int16sb
 from construct.core import ConstError, StreamError
 from construct import this
 
@@ -39,6 +39,15 @@ xiaomi_format = Struct(
     "value" / Array(this.datal, Byte)
 )
 
+xiaomi1_format = Struct(
+    "mac" / Array(6, Byte),
+    "temp" / Int16sb,
+    "moisture" / Int8ub,
+    "battery" / Int8ub,
+    "volt" / Int16ub,
+    "cpt" / Int8ub,
+)
+
 senso2type = {0x1004: 'temperature',
               0x1006: 'moisture',
               0x1007: 'light',
@@ -46,6 +55,8 @@ senso2type = {0x1004: 'temperature',
               0x1009: 'conductivity',
               0x100a: 'battery',
               }
+
+uuid_lywsd03 = '0000181a-0000-1000-8000-00805f9b34fb'
 
 DEBUG = False
 
@@ -63,6 +74,50 @@ class XiaomiPassiveScanner:
                                      detection_callback=self.detection_callback,
                                      )
         self.scanning = asyncio.Event()
+
+    def hex_string_ip_1(self, data):
+        result = bytearray(data)
+        return ':'.join('{:02x} '.format(x)
+                        for x in result).upper().replace(" ", "")
+
+    def test_data(self, data, min, max):
+        if data < min:
+            return False
+        elif data > max:
+            return False
+        return True
+
+    def ad_decode1(self, todecode):
+        result = {"ok": False,
+                  "mac": "",
+                  "sensor": 0,
+                  "stype": "",
+                  "svalue": None}
+        try:
+            test = xiaomi1_format.parse(todecode)
+        except construct.core.StreamError:
+            return result
+
+        result["ok"] = True
+        result["mac"] = self.hex_string_ip_1(test.mac)
+        result["stype"] = "multi"
+        if self.test_data(test.temp, -200, 600):
+            result["temperature"] = round(test.temp * 0.1, 1)
+        else:
+            result["ok"] = False
+        if self.test_data(test.moisture, 0, 100):
+            result["moisture"] = test.moisture
+        else:
+            result["ok"] = False
+        if self.test_data(test.battery, 0, 100):
+            result["battery"] = test.battery
+        else:
+            result["ok"] = False
+        if self.test_data(test.volt, 0, 4000):
+            result["volt"] = round(test.volt * 0.001, 3)
+        else:
+            result["ok"] = False
+        return result
 
     def ad_decode(self, todecode):
         result = {"ok": False,
@@ -132,23 +187,28 @@ class XiaomiPassiveScanner:
     def _unit_from_stype(self, stype):
         formatstr = "{}"
         if stype == "temperature":
-            formatstr += ":  {} °C"
+            formatstr += ": {} °C"
         elif stype == "battery":
-            formatstr += ":      {} %"
+            formatstr += ":       {} %"
         elif stype == "moisture":
-            formatstr += ":     {} %"
+            formatstr += ":      {} %"
         elif stype == "light":
-            formatstr += ":        {} lux"
+            formatstr += ":         {} lux"
         elif stype == "conductivity":
-            formatstr += ": {} µS/cm"
+            formatstr += ":  {} µS/cm"
         elif stype == "rssi":
-            formatstr += ":          {} dBm"
+            formatstr += ":         {} dBm"
+        elif stype == "volt":
+            formatstr += ":       {} V"
         return formatstr
 
     def dump_result(self, result):
-        formatstr = "mac: {} " + self._unit_from_stype(result["stype"])
-        strresult = formatstr.format(result["mac"],
-                                     result["stype"], result["value"])
+        if result["stype"] != "multi":
+            formatstr = "mac: {} " + self._unit_from_stype(result["stype"])
+            strresult = formatstr.format(result["mac"],
+                                         result["stype"], result["value"])
+        else:
+            strresult = self.dump_device(result["mac"])
         return strresult
 
     def dump_device(self, mac):
@@ -157,13 +217,26 @@ class XiaomiPassiveScanner:
         data = self.devices[mac]
         strresult = "\n{} {}\n=================\n".format(mac, data["name"])
         for key in ("rssi", "battery", "temperature",
-                    "moisture", "light", "conductivity"):
+                    "moisture", "light", "conductivity", "volt"):
             if key in data.keys():
                 line = self._unit_from_stype(key).format(key, data[key])
                 strresult += line + "\n"
         return strresult
 
     def detection_callback(self, device, advertisement_data):
+
+        def init_device(result):
+            deviceh = {}
+            deviceh['name'] = result["name"]
+            deviceh['sensor'] = result["mac"]
+            deviceh['rssi'] = result["rssi"]
+            dtnow = "{}".format(datetime.now())[:19].replace(' ', 'T')
+            deviceh['dtmsg'] = dtnow
+            deviceh['from'] = gethostname()
+            for key in ("temperature", "moisture", "battery", "volt"):
+                if key in result.keys():
+                    deviceh[key] = result[key]
+            return deviceh
 
         if advertisement_data.service_data is None:
             return
@@ -172,7 +245,33 @@ class XiaomiPassiveScanner:
         elif advertisement_data.service_data.keys == []:
             return
         for key, value in advertisement_data.service_data.items():
-            if len(value) > 15:
+            if (len(value) == 13) and (key == uuid_lywsd03):
+                # LYWSD03mmc custom
+                temperature = int.from_bytes(value[6:8], "big", signed=True)
+                temperature = round(temperature * 0.1, 2)
+                moisture = int.from_bytes(value[8:9], "big", signed=False)
+                battery = int.from_bytes(value[9:10], "big", signed=False)
+                vbattery = int.from_bytes(value[10:12], "big", signed=False)
+                vbattery = round(vbattery * 0.001, 2)
+                """
+                print("temperature: {} °C".format(temperature))
+                print("moisture: {} %".format(moisture))
+                print("battery: {} %".format(battery))
+                print("vbattery: {} V".format(vbattery))
+                """
+                result = self.ad_decode1(value)
+                if result["ok"] is False:
+                    return
+                if result["mac"] != device.address:
+                    return
+                result["name"] = advertisement_data.local_name
+                result["rssi"] = device.rssi
+                address = result["mac"]
+                if (result["mac"] in self.devices.keys()) is False:
+                    self.devices[address] = init_device(result)
+                if self.callback is not None:
+                    self.callback(self, result)
+            elif len(value) > 15:
                 result = self.ad_decode(value)
                 if result["ok"] is False:
                     return
@@ -183,20 +282,12 @@ class XiaomiPassiveScanner:
                 result["rssi"] = device.rssi
                 address = result["mac"]
                 if (result["mac"] in self.devices.keys()) is False:
-                    self.devices[address] = {}
-                    self.devices[address]['name'] = result["name"]
-                    self.devices[address]['sensor'] = result["mac"]
-                    self.devices[address]['from'] = gethostname()
-                    dtnow = "{}".format(datetime.now())[:19].replace(' ', 'T')
-                    self.devices[address]['dtmsg'] = dtnow
-                    self.devices[address]['rssi'] = result["rssi"]
-                # print(result)
+                    self.devices[address] = init_device(result)
                 self.decode2val(result)
                 if self.callback is not None:
                     self.callback(self, result)
                 if "value" in result.keys():
                     self.devices[address][result['stype']] = result['value']
-                # print(self.devices[address])
             else:
                 return
         return
@@ -211,7 +302,6 @@ class XiaomiPassiveScanner:
                 # print('\t\tScan has timed out so we terminate')
             await asyncio.sleep(0.1)
         await self._scanner.stop()
-        # self.callback(self)
 
 
 def main():
