@@ -4,9 +4,9 @@ requires = ["setuptools", "wheel"]
 [project]
 name        = "xiaomipassive"
 version     = "2023.2.1.dev0"
-license     = {text = "Apache-2.0"}
+license     = {text = "MIT License"}
 description = "MiFlora and LYWSD02 passive scanner"
-readme      = "README.rst"
+readme      = "README.md"
 authors     = [
     {name = "Alain", email = "afer921@mailfence.com"}
 ]
@@ -15,7 +15,7 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -27,3 +27,7 @@ dependencies    = [
     "construct",
     "pip>=21.0",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/afer92/xiaomipassive"
+"Bug Tracker" = "https://github.com/afer92/xiaomipassive/issues"
