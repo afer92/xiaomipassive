@@ -58,7 +58,143 @@ senso2type = {0x1004: 'temperature',
 
 uuid_lywsd03 = '0000181a-0000-1000-8000-00805f9b34fb'
 
+stype2unit = {'temperature': '°C',
+              'moisture': '%',
+              'light': 'lux',
+              'conductivity': 'µS/cm',
+              'battery': '%',
+              'volt': 'V',
+              'rssi': 'dBm',
+              }
+
 DEBUG = False
+
+
+class XiaomiSensor:
+
+    def __init__(self, device, stype, value):
+        self._device = device
+        self._stype = stype
+        self._value = value
+        dtnow = "{}".format(datetime.now())[:19].replace(' ', 'T')
+        self._dtmsg = dtnow
+
+    def sensor_update(self, value):
+        dtnow = "{}".format(datetime.now())[:19].replace(' ', 'T')
+        self._dtmsg = dtnow
+        self._value = value
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def stype(self):
+        return self._stype
+
+    @property
+    def dtmsg(self):
+        return self._dtmsg
+
+    def __repr__(self):
+        if self._stype in stype2unit.keys():
+            strresult = f"mac: {self._device.mac} "\
+                f"{self._stype+':':<13}"\
+                f"{self._value:>5} "\
+                f"{stype2unit[self._stype]:<5} "\
+                f"({self._dtmsg})"
+        else:
+            strresult = f"mac: {self._device.mac} "\
+                f"{self._stype+':':<13}"\
+                f"{self._value:>5} "\
+                f"({self._dtmsg})"
+        return strresult
+
+
+class XiaomiDevice:
+
+    def __init__(self, mac, rssi=None, name=None):
+        self._mac = mac
+        self._rssi = rssi
+        self._name = name
+        self._server = gethostname()
+        self._sensors = []
+        self._stype2sensor = {}
+
+    def init(self, load_data):
+        for key, value in data_items():
+            if key == 'name':
+                self._name = value
+
+    def sensor_add(self, stype, value):
+        if stype in self._stype2sensor.keys():
+            self.sensor_update(stype, value)
+        else:
+            sensor = XiaomiSensor(self, stype, value)
+            self._stype2sensor[stype] = sensor
+            self._sensors.append(sensor)
+
+    def sensor_update(self, stype, value):
+        if stype in self._stype2sensor.keys():
+            sensor = self._stype2sensor[stype]
+            sensor.sensor_update(value)
+        else:
+            self.sensor_add(stype, value)
+
+    def __repr__(self):
+        strresult = f"\n{self._mac} {self._name}\n=================\n"
+        if self._rssi is not None:
+            sensor = XiaomiSensor(self, 'rssi', self._rssi)
+            line = f'{sensor}'
+            strresult += line + "\n"
+        for sensor in self._sensors:
+            line = f'{sensor}'
+            strresult += line + "\n"
+        return strresult
+
+    @property
+    def mac(self):
+        return self._mac
+
+    @property
+    def rssi(self):
+        return self._rssi
+
+    @rssi.setter
+    def rssi(self, rssi):
+        self._rssi = rssi
+
+    @property
+    def signal(self):
+        return self._rssi
+
+    @signal.setter
+    def signal(self, signal):
+        self._rssi = signal
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def server(self):
+        return self._server
+
+    @property
+    def sensors(self):
+        return self._sensors
+
+    @property
+    def data(self):
+        data = {}
+        data['sensor'] = self._mac
+        data['name'] = self._name
+        data['rssi'] = self._rssi
+        data['from'] = self._server
+        for sensor in self._sensors:
+            data['dtmsg'] = sensor.dtmsg
+            data[sensor.stype] = sensor.value
+        return data
 
 
 class XiaomiPassiveScanner:
@@ -67,7 +203,8 @@ class XiaomiPassiveScanner:
         self.loop = loop
         self.callback = callback
         or_patterns = []
-        self.devices = {}
+        #self.devices = {}
+        self.xdevices = {}
         self.timeout_seconds = timeout_seconds
 
         self._scanner = BleakScanner(scanning_mode='passive',
@@ -184,44 +321,20 @@ class XiaomiPassiveScanner:
             print("==> {}: {}".format(result["stype"], result["svalue"]))
         return result
 
-    def _unit_from_stype(self, stype):
-        formatstr = "{}"
-        if stype == "temperature":
-            formatstr += ": {} °C"
-        elif stype == "battery":
-            formatstr += ":       {} %"
-        elif stype == "moisture":
-            formatstr += ":      {} %"
-        elif stype == "light":
-            formatstr += ":         {} lux"
-        elif stype == "conductivity":
-            formatstr += ":  {} µS/cm"
-        elif stype == "rssi":
-            formatstr += ":         {} dBm"
-        elif stype == "volt":
-            formatstr += ":       {} V"
-        return formatstr
-
     def dump_result(self, result):
         if result["stype"] != "multi":
-            formatstr = "mac: {} " + self._unit_from_stype(result["stype"])
-            strresult = formatstr.format(result["mac"],
-                                         result["stype"], result["value"])
+            xsensor = XiaomiSensor(XiaomiDevice(result['mac']),
+                                   result["stype"], result['value'])
+            strresult = f"{xsensor}"
         else:
             strresult = self.dump_device(result["mac"])
         return strresult
 
     def dump_device(self, mac):
-        if mac not in self.devices.keys():
+        if mac not in self.xdevices.keys():
             return ""
-        data = self.devices[mac]
-        strresult = "\n{} {}\n=================\n".format(mac, data["name"])
-        for key in ("rssi", "battery", "temperature",
-                    "moisture", "light", "conductivity", "volt"):
-            if key in data.keys():
-                line = self._unit_from_stype(key).format(key, data[key])
-                strresult += line + "\n"
-        return strresult
+        device = self.xdevices[mac]
+        return f"{device}"
 
     def detection_callback(self, device, advertisement_data):
 
@@ -245,6 +358,9 @@ class XiaomiPassiveScanner:
         elif advertisement_data.service_data.keys == []:
             return
         for key, value in advertisement_data.service_data.items():
+            address = device.address
+            name = advertisement_data.local_name
+            rssi = device.rssi
             if (len(value) == 13) and (key == uuid_lywsd03):
                 # LYWSD03mmc custom
                 temperature = int.from_bytes(value[6:8], "big", signed=True)
@@ -260,34 +376,54 @@ class XiaomiPassiveScanner:
                 print("vbattery: {} V".format(vbattery))
                 """
                 result = self.ad_decode1(value)
+                result["mac"] = address
+                result["name"] = name
+                result["rssi"] = rssi
                 if result["ok"] is False:
                     return
                 if result["mac"] != device.address:
                     return
-                result["name"] = advertisement_data.local_name
-                result["rssi"] = device.rssi
-                address = result["mac"]
-                if (result["mac"] in self.devices.keys()) is False:
-                    self.devices[address] = init_device(result)
+                if device.address not in self.xdevices.keys():
+                    self.xdevices[device.address] = XiaomiDevice(address,
+                                                                 rssi=rssi,
+                                                                 name=name)
+                    xd = self.xdevices[device.address]
+                    xd.sensor_add('temperature', temperature)
+                    xd.sensor_add('moisture', moisture)
+                    xd.sensor_add('battery', battery)
+                    xd.sensor_add('volt', vbattery)
+                else:
+                    xd = self.xdevices[device.address]
+                    xd.sensor_update('temperature', temperature)
+                    xd.sensor_update('moisture', moisture)
+                    xd.sensor_update('battery', battery)
+                    xd.sensor_update('volt', vbattery)
                 if self.callback is not None:
                     self.callback(self, result)
             elif len(value) > 15:
                 result = self.ad_decode(value)
+                result["mac"] = address
+                result["name"] = name
+                result["rssi"] = rssi
                 if result["ok"] is False:
                     return
                 if result["mac"] != device.address:
                     return
+                init_device(result)
                 result["name"] = advertisement_data.local_name
-                # result["rssi"] = advertisement_data.rssi
                 result["rssi"] = device.rssi
-                address = result["mac"]
-                if (result["mac"] in self.devices.keys()) is False:
-                    self.devices[address] = init_device(result)
                 self.decode2val(result)
+                if device.address not in self.xdevices.keys():
+                    self.xdevices[device.address] = XiaomiDevice(address,
+                                                                 rssi=rssi,
+                                                                 name=name)
+                    xd = self.xdevices[device.address]
+                    xd.sensor_add(result['stype'], result['value'])
+                else:
+                    xd = self.xdevices[device.address]
+                    xd.sensor_update(result['stype'], result['value'])
                 if self.callback is not None:
                     self.callback(self, result)
-                if "value" in result.keys():
-                    self.devices[address][result['stype']] = result['value']
             else:
                 return
         return
@@ -319,8 +455,8 @@ def main():
         except KeyboardInterrupt as err:
             print(err)
 
-        for mac, device in miflora_scanner.devices.items():
-            print(miflora_scanner.dump_device(mac))
+        for mac, device in miflora_scanner.xdevices.items():
+            print(device)
 
     get_data()
 
