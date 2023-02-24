@@ -51,19 +51,18 @@ Function **dump_device(mac)** format the data for one mac address
 ```
 E7:2E:01:71:xx:yy LYWSD02
 =================
-rssi:          -89 dBm
-battery:      18 %
-temperature:  20.9 °C
-moisture:     49.0 %
+mac: E7:2E:01:71:xx:yy rssi:          -93 dBm   (2023-02-24T19:34:19)
+mac: E7:2E:01:71:xx:yy moisture:     47.0 %     (2023-02-24T19:32:44)
+mac: E7:2E:01:71:xx:yy temperature:  20.6 °C    (2023-02-24T19:34:18)
+mac: E7:2E:01:71:xx:yy battery:        18 %     (2023-02-24T19:33:37)
 
-
-C4:7C:8D:6C:xx:yy Flower care
+C4:7C:8D:65:B1:1D Flower care
 =================
-rssi:          -87 dBm
-temperature:  12.4 °C
-moisture:     28 %
-light:        151 lux
-conductivity: 432 µS/cm
+mac: C4:7C:8D:65:xx:yy rssi:          -81 dBm   (2023-02-24T19:34:19)
+mac: C4:7C:8D:65:xx:yy light:         118 lux   (2023-02-24T19:33:41)
+mac: C4:7C:8D:65:xx:yy moisture:       21 %     (2023-02-24T19:33:52)
+mac: C4:7C:8D:65:xx:yy conductivity:  309 µS/cm (2023-02-24T19:34:04)
+mac: C4:7C:8D:65:xx:yy temperature:  20.7 °C    (2023-02-24T19:34:15)
 ```
 
 ## Example
@@ -87,8 +86,8 @@ def main():
         except KeyboardInterrupt as err:
             print(err)
 
-        for mac, device in miflora_scanner.devices.items():
-            print(miflora_scanner.dump_device(mac))
+        for mac, device in miflora_scanner.xdevices.items():
+            print(device)
 
     get_data()
 
