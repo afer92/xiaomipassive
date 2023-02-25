@@ -413,17 +413,18 @@ class XiaomiPassiveScanner:
                 result["name"] = advertisement_data.local_name
                 result["rssi"] = device.rssi
                 self.decode2val(result)
-                if device.address not in self.xdevices.keys():
-                    self.xdevices[device.address] = XiaomiDevice(address,
-                                                                 rssi=rssi,
-                                                                 name=name)
-                    xd = self.xdevices[device.address]
-                    xd.sensor_add(result['stype'], result['value'])
-                else:
-                    xd = self.xdevices[device.address]
-                    xd.sensor_update(result['stype'], result['value'])
-                if self.callback is not None:
-                    self.callback(self, result)
+                if 'value' in  result.keys():
+                    if device.address not in self.xdevices.keys():
+                        self.xdevices[device.address] = XiaomiDevice(address,
+                                                                     rssi=rssi,
+                                                                     name=name)
+                        xd = self.xdevices[device.address]
+                        xd.sensor_add(result['stype'], result['value'])
+                    else:
+                        xd = self.xdevices[device.address]
+                        xd.sensor_update(result['stype'], result['value'])
+                    if self.callback is not None:
+                        self.callback(self, result)
             else:
                 return
         return
