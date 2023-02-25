@@ -30,7 +30,8 @@ type    length  data
 """
 
 xiaomi_format = Struct(
-    "typeCst" / Array(4, Byte),
+    "typeCst" / Array(2, Byte),
+    "typeDev" / Int16ul,
     "num" / Int8ul,
     "mac" / Array(6, Byte),
     "tab" / Int8ul,
@@ -68,6 +69,16 @@ stype2unit = {'temperature': '°C',
               'volt': 'V',
               'rssi': 'dBm',
               }
+
+
+# Device type dictionary
+# {device type code: device name}
+XIAOMI_TYPE_DICT = {
+    0x0098: "HHCCJCY01",  # Miflora Flower care
+    0x045B: "LYWSD02",
+    0x16e4: "LYWSD02MMC",
+    0x055B: "LYWSD03MMC",
+}
 
 DEBUG = False
 
@@ -268,6 +279,11 @@ class XiaomiPassiveScanner:
             test = xiaomi_format.parse(todecode)
         except construct.core.StreamError:
             return result
+        if test.typeDev in XIAOMI_TYPE_DICT.keys():
+            result['xtype'] = test.typeDev
+            # print(f"typeDev: {test.typeDev:04x} {XIAOMI_TYPE_DICT[test.typeDev]}")
+        else:
+            print(f"typeDev: {test.typeDev:04x}")
         result["ok"] = True
         result["mac"] = self.to_hex_string(test.mac)
         result["typeCst"] = test.typeCst
