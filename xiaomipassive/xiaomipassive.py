@@ -48,18 +48,20 @@ xiaomi1_format = Struct(
     "cpt" / Int8ub,
 )
 
-senso2type = {0x1004: 'temperature',
-              0x1006: 'moisture',
-              0x1007: 'light',
-              0x1008: 'moisture',
-              0x1009: 'conductivity',
-              0x100a: 'battery',
+senso2type = {0x1004: 'temperature', # Temperature
+              0x1006: 'moisture', # Humidity
+              0x1007: 'light', # Illuminance
+              0x1008: 'moisture', # Moisture
+              0x1009: 'conductivity', # Conductivity
+              0x100a: 'battery', # Battery
+              0x100d: 'battery', # Temperature and humidity
               }
 
 uuid_lywsd03 = '0000181a-0000-1000-8000-00805f9b34fb'
 
 stype2unit = {'temperature': '°C',
               'moisture': '%',
+              'humidity': '%',
               'light': 'lux',
               'conductivity': 'µS/cm',
               'battery': '%',
