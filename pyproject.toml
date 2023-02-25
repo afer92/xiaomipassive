@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name        = "xiaomipassive"
-version     = "2023.2.1.dev1"
+version     = "2023.2.2.dev0"
 license     = {text = "MIT License"}
 description = "MiFlora and LYWSD02 passive scanner"
 readme      = "README.md"
