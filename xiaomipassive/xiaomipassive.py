@@ -126,11 +126,13 @@ class XiaomiSensor:
 
 class XiaomiDevice:
 
-    def __init__(self, mac, rssi=None, name=None, model=None):
+    def __init__(self, mac,
+                 rssi=None, name=None, model=None, cmodel=None):
         self._mac = mac
         self._rssi = rssi
         self._name = name
         self._model = model
+        self._cmodel = cmodel
         self._server = gethostname()
         self._sensors = []
         self._stype2sensor = {}
@@ -193,6 +195,10 @@ class XiaomiDevice:
     @property
     def model(self):
         return self._model
+
+    @property
+    def cmodel(self):
+        return self._cmodel
 
     @property
     def server(self):
