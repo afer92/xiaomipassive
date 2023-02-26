@@ -10,7 +10,7 @@ readme      = "README.md"
 authors     = [
     {name = "Alain", email = "afer921@mailfence.com"}
 ]
-keywords    = ["home", "automation"]
+keywords    = ["home", "automation", "xiaomi", "LYWSD02", "LYWSD03", "Flower care"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: End Users/Desktop",
