@@ -1,5 +1,5 @@
 # xiaomipassive
-LYWSD02 and MiFlora passive scanner
+LYWSD02, LYWSD03MMC (custom firmware ATC) and MiFlora passive scanner
 ## Installation
 ```
 git clone https://github.com/afer92/xiaomipassive.git
