@@ -126,10 +126,11 @@ class XiaomiSensor:
 
 class XiaomiDevice:
 
-    def __init__(self, mac, rssi=None, name=None):
+    def __init__(self, mac, rssi=None, name=None, model=None):
         self._mac = mac
         self._rssi = rssi
         self._name = name
+        self._model = model
         self._server = gethostname()
         self._sensors = []
         self._stype2sensor = {}
@@ -188,6 +189,10 @@ class XiaomiDevice:
     @property
     def name(self):
         return self._name
+
+    @property
+    def model(self):
+        return self._model
 
     @property
     def server(self):
@@ -283,6 +288,7 @@ class XiaomiPassiveScanner:
             result['xtype'] = test.typeDev
             # print(f"typeDev: {test.typeDev:04x} {XIAOMI_TYPE_DICT[test.typeDev]}")
         else:
+            result['xtype'] = None
             print(f"typeDev: {test.typeDev:04x}")
         result["ok"] = True
         result["mac"] = self.to_hex_string(test.mac)
@@ -404,7 +410,9 @@ class XiaomiPassiveScanner:
                 if device.address not in self.xdevices.keys():
                     self.xdevices[device.address] = XiaomiDevice(address,
                                                                  rssi=rssi,
-                                                                 name=name)
+                                                                 name=name,
+                                                                 model='LYWSD03',
+                                                                 cmodel='Xiaomi BLE Sensor')
                     xd = self.xdevices[device.address]
                     xd.sensor_add('temperature', temperature)
                     xd.sensor_add('moisture', moisture)
@@ -433,9 +441,15 @@ class XiaomiPassiveScanner:
                 self.decode2val(result)
                 if 'value' in  result.keys():
                     if device.address not in self.xdevices.keys():
+                        if result["xtype"]:
+                            model = XIAOMI_TYPE_DICT[result["xtype"]]
+                        else:
+                            model = None
                         self.xdevices[device.address] = XiaomiDevice(address,
                                                                      rssi=rssi,
-                                                                     name=name)
+                                                                     name=name,
+                                                                     model=model,
+                                                                     cmodel='Xiaomi BLE Sensor')
                         xd = self.xdevices[device.address]
                         xd.sensor_add(result['stype'], result['value'])
                     else:
