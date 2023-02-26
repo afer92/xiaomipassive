@@ -6,6 +6,24 @@ git clone https://github.com/afer92/xiaomipassive.git
 cd xiaomipassive
 pip3 install .
 ```
+## Command line tool
+```
+xiaomipassivec
+```
+Output:
+```
+mac: 80:EA:CA:89:xx:yy conductivity:   54 µS/cm (2023-02-26T00:42:25)
+mac: C4:7C:8D:64:xx:yyconductivity:  837 µS/cm (2023-02-26T00:42:25)
+mac: C4:7C:8D:6C:xx:yy light:          26 lux   (2023-02-26T00:42:26)
+...
+A4:C1:38:09:xx:yy ATC_0990AB
+=================
+mac: A4:C1:38:09:xx:yyB rssi:          -35 dBm   (2023-02-26T00:42:39)
+mac: A4:C1:38:09:xx:yy temperature:  21.6 °C    (2023-02-26T00:42:39)
+mac: A4:C1:38:09:xx:yy moisture:       32 %     (2023-02-26T00:42:39)
+mac: A4:C1:38:09:xx:yyB battery:        93 %     (2023-02-26T00:42:39)
+mac: A4:C1:38:09:xx:yy volt:         3.04 V     (2023-02-26T00:42:39)
+```
 ## class XiaomiPassiveScanner
 ```Python
 loop = asyncio.get_event_loop()
