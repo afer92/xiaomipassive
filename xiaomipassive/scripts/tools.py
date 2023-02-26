@@ -134,7 +134,7 @@ def autostr(mac, dclass,
     name_short = "".join(name_partsc)
 
     print("---- {} ----".format(dclass))
-    print(f"Topic: homeassistant/sensor/{topic}/{dclass}/config\nmsg:")
+    print(f"Topic: homeassistant/sensor/{mac.lower().replace(':', '')}/{dclass}/config\nmsg:")
     print(auto_json(dclass=dclass,
                     name_long=name_long,
                     name_short=name_short,
@@ -179,7 +179,7 @@ def scan():
                     name=name,
                     cmodel='Xiaomi BLE')
             for sensor in device.sensors:
-                print(f"stype: {sensor.stype}, {stype2topic[sensor.stype]}")
+                # print(f"stype: {sensor.stype}, {stype2topic[sensor.stype]}")
                 dclass = stype2topic[sensor.stype]
                 autostr(mac, dclass,
                         topic=stype2topic[sensor.stype],
