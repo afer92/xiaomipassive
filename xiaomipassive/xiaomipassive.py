@@ -8,9 +8,6 @@ import asyncio
 
 from bleak import BleakScanner
 from bleak import _logger as logger
-from bleak.assigned_numbers import AdvertisementDataType
-from bleak.backends.bluezdbus.scanner import BlueZScannerArgs
-from bleak.backends.bluezdbus.advertisement_monitor import OrPattern
 
 import logging
 import logging.handlers
@@ -229,17 +226,13 @@ class XiaomiPassiveScanner:
     def __init__(self, loop, callback, timeout_seconds=240):
         self.loop = loop
         self.callback = callback
-        or_patterns = [
-                       OrPattern(0, AdvertisementDataType.FLAGS, b"\x06"),
-                       OrPattern(0, AdvertisementDataType.FLAGS, b"\x1a"),
-                       ]
+        or_patterns = []
         #self.devices = {}
         self.xdevices = {}
         self.timeout_seconds = timeout_seconds
 
         self._scanner = BleakScanner(scanning_mode='passive',
                                      detection_callback=self.detection_callback,
-                                     bluez=BlueZScannerArgs(or_patterns=or_patterns),
                                      )
         self.scanning = asyncio.Event()
 
@@ -397,8 +390,7 @@ class XiaomiPassiveScanner:
         for key, value in advertisement_data.service_data.items():
             address = device.address
             name = advertisement_data.local_name
-            # rssi = device.rssi
-            rssi = advertisement_data.rssi
+            rssi = device.rssi
             if (len(value) == 13) and (key == uuid_lywsd03):
                 # LYWSD03mmc custom
                 temperature = int.from_bytes(value[6:8], "big", signed=True)
@@ -451,8 +443,7 @@ class XiaomiPassiveScanner:
                     return
                 init_device(result)
                 result["name"] = advertisement_data.local_name
-                # result["rssi"] = device.rssi
-                result["rssi"] = advertisement_data.rssi
+                result["rssi"] = device.rssi
                 self.decode2val(result)
                 if 'value' in  result.keys():
                     if device.address not in self.xdevices.keys():
