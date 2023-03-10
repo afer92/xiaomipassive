@@ -397,8 +397,10 @@ class XiaomiPassiveScanner:
         for key, value in advertisement_data.service_data.items():
             address = device.address
             name = advertisement_data.local_name
-            # rssi = device.rssi
-            rssi = advertisement_data.rssi
+            try:
+                rssi = advertisement_data.rssi
+            except AttributeError:
+                rssi = device.rssi
             if (len(value) == 13) and (key == uuid_lywsd03):
                 # LYWSD03mmc custom
                 temperature = int.from_bytes(value[6:8], "big", signed=True)
@@ -451,8 +453,10 @@ class XiaomiPassiveScanner:
                     return
                 init_device(result)
                 result["name"] = advertisement_data.local_name
-                # result["rssi"] = device.rssi
-                result["rssi"] = advertisement_data.rssi
+                try:
+                    result["rssi"] = advertisement_data.rssi
+                except AttributeError:
+                    result["rssi"] = device.rssi
                 self.decode2val(result)
                 if 'value' in  result.keys():
                     if device.address not in self.xdevices.keys():
