@@ -6,6 +6,11 @@ git clone https://github.com/afer92/xiaomipassive.git
 cd xiaomipassive
 pip3 install .
 ```
+```
+git clone https://github.com/afer92/xiaomipassive.git
+cd xiaomipassive
+python3 -m pip install . --break-package-system
+```
 ## Command line tool
 ```
 xiaomipassivec
