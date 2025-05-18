@@ -8,6 +8,9 @@ import asyncio
 
 from bleak import BleakScanner
 from bleak import _logger as logger
+from bleak.backends.bluezdbus.scanner import BlueZScannerArgs
+from bleak.backends.bluezdbus.advertisement_monitor import OrPattern
+from bleak.assigned_numbers import AdvertisementDataType
 
 import logging
 import logging.handlers
@@ -28,6 +31,14 @@ type    length  data
 1008    01      38      -> moisture in %         0x38 = 56%           (MiFlora)
 1009    02      7011    -> conductivity in µS/cm 0x0619 = 1561 µS/cm  (MiFlora)
 """
+
+PASSIVE_SCANNER_ARGS = BlueZScannerArgs(
+    or_patterns=[
+        OrPattern(0, AdvertisementDataType.FLAGS, b"\x06"),
+        OrPattern(0, AdvertisementDataType.FLAGS, b"\x1a"),
+    ]
+)
+
 
 xiaomi_format = Struct(
     "typeCst" / Array(2, Byte),
@@ -233,6 +244,7 @@ class XiaomiPassiveScanner:
 
         self._scanner = BleakScanner(scanning_mode='passive',
                                      detection_callback=self.detection_callback,
+                                     bluez=PASSIVE_SCANNER_ARGS
                                      )
         self.scanning = asyncio.Event()
 
